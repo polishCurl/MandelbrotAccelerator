@@ -14,9 +14,11 @@ Notes:			A brave attempt to model high-level functionality of the hardware
 # Include relevant libraries
 import numpy as np
 import sys
+import re
 import matplotlib.pyplot as plt
 
 
+counter = 0
 
 #------------------------------------------------------------------------------
 # Constants and global variables
@@ -65,7 +67,6 @@ def q_to_float(number):
 
 
 
-
 #------------------------------------------------------------------------------
 # Signed fixed-point number preprocessing
 # -----------------------------------------------------------------------------
@@ -75,7 +76,8 @@ def process_complex_numbers(number):
 	temp = bin(number);
 	temp = temp[2:]
 	temp = "0" * (Q_LEN - len(temp)) + temp
-	if (temp[0] == '1' and len(temp) == Q_LEN):
+
+	if temp[0] == '1':
 		return int(("1" * PRE_MUL_SHIFT) + temp[0:Q_LEN-PRE_MUL_SHIFT], 2)
 	else:
 		return int(("0" * PRE_MUL_SHIFT) + temp[0:Q_LEN-PRE_MUL_SHIFT], 2)
@@ -89,9 +91,18 @@ def mandelbrot(max_iterations, c_r, c_i, argand_step):
 
 	# Convert the input arguments to internal complex number signed fixed-point
 	# format 
-	z_i = c_i = int(hex(c_i) + "0" * ((FRAC_LEN-(INPUT_LEN/2))/4), 16)
-	init_c_r = z_r = c_r = int(hex(c_r) + "0" * ((FRAC_LEN-(INPUT_LEN/2))/4), 16)
-	argand_step = int(hex(argand_step) + "0" * ((FRAC_LEN-INPUT_LEN)/4), 16)
+	z_i = c_i = int(bin(c_i) + "0" * (Q_LEN-INPUT_LEN), 2)
+	init_c_r = z_r = c_r = int(bin(c_r) + "0" * (Q_LEN-INPUT_LEN), 2)
+	argand_step = int(bin(argand_step) + "0" * (FRAC_LEN-INPUT_LEN), 2)
+
+	# Test case header
+	modelOutput.write("\n\n--------------------------------------------------------\n")
+	modelOutput.write("Maximum iterations:\t\t{}\n".format(max_iterations))
+	modelOutput.write("Starting 'C' Real:\t\t{:6f}\n".format(q_to_float(c_r)))
+	modelOutput.write("Starting 'C' Imaginary:\t{:6f}\n".format(q_to_float(c_i)))
+	modelOutput.write("Step size: \t\t\t\t{:6f}\n".format(q_to_float(argand_step)))
+	modelOutput.write("--------------------------------------------------------\n")
+	modelOutput.write("de_data\t\tde_addr\tde_nbyte\n")
 
 	# Initialise internal registers
 	bound = 4 << FRAC_LEN 				# Calculate the bound as a fixed-point fractional number
@@ -99,21 +110,18 @@ def mandelbrot(max_iterations, c_r, c_i, argand_step):
 	y_pos = 0
 	iteration = 1 						# Mandelbrot iteration counter. Set to 1 to save one cycle 
 										# as we start with z_r = c_r and z_i = c_i instead of 0s
-	finished = False 					# Finished flag (raised if function value out of bound)
+	screen = np.zeros((SCREEN_HEIGHT, SCREEN_WIDTH)) # Initialise the frame store
 
-
-
-	# Initialise the frame store
-	screen = np.zeros((SCREEN_HEIGHT, SCREEN_WIDTH))
 
 	# Iterate through all the pixels on screem
 	while(True):
 
 		iteration = 1
-		finished = False
 
 		# Mandelbrot iteration loop
-		while (not finished and iteration < max_iterations):
+		while (iteration < max_iterations):
+
+
 
 			# Preprocess 'z' so that and then calculate z_imaginary and z_real squared. Truncate
 			# bits that won't fit
@@ -126,24 +134,43 @@ def mandelbrot(max_iterations, c_r, c_i, argand_step):
 			next_z_real = (z_real_sq - z_imag_sq + c_r) & MASK
 			next_z_imag = (((mul_op1 * mul_op2) << 1) + c_i) & MASK
 
+			print hex(z_r) + "\t" + hex(next_z_real) + "\t" + hex(z_i) + "\t" + hex(next_z_imag)
 
 			# Compute the value of function and check if its still within bounds.
 			func_val = (z_real_sq + z_imag_sq) & MASK
 			if func_val > bound:
-				finished = True
-			else:
-				finished = False
+				break
+
 
 			# Update the iteration counter and 'z'
 			iteration = iteration + 1
 			z_r = next_z_real
 			z_i = next_z_imag
 
-		# Write to frame buffer
-		screen[y_pos][x_pos] = iteration & 255
+
+		# Write to frame buffer and dump the address and byte number and value to be written to
+		# to it
+		screen[y_pos][x_pos] = iteration & 0xFF
+		de_data = iteration & 0xFF
+		address = (y_pos << 9) + (y_pos << 7) + x_pos
+		de_addr = address >> 2
+
+		temp = address & 0b11
+		if (temp == 0):
+			de_nbyte = "e"
+		elif (temp == 1):
+			de_nbyte = "d"
+		elif (temp == 2):
+			de_nbyte = "b"
+		elif (temp == 3):
+			de_nbyte = "7"
+		else:
+			de_nbyte = "f"
+
+		modelOutput.write("{0:02x}{0:02x}{0:02x}{0:02x}\t{1:05x}\t{2}\n".format(de_data, de_addr, de_nbyte))
 
 
-		# Compute the next pixel number
+		# Compute the next pixel number coordinate and respective point Argand plane
 		if (x_pos + 1 >= SCREEN_WIDTH):
 			if (y_pos + 1 >= SCREEN_HEIGHT):
 				return screen
@@ -157,16 +184,33 @@ def mandelbrot(max_iterations, c_r, c_i, argand_step):
 			z_r = c_r = (c_r + argand_step) & MASK
 			z_i = c_i
 
+#------------------------------------------------------------------------------
+# Main method
+# -----------------------------------------------------------------------------
 
-
-
+# Test for valid number of command line arguments
+if len(sys.argv) is not 4:
+	print "Invalid number of command line arguments! (should be 3)"
+	sys.exit()
 
 # Load the input parameters
-r0 = int(sys.argv[1])					# Max iterations before Mandelbrot set membership determined
-r1 = int(sys.argv[2], 16)				# Current real part of 'c'
-r2 = int(sys.argv[3], 16)				# Current imaginary part of 'c'
-r3 = int(sys.argv[4], 16)				# Step size in Argand plane
+testVectors = open(sys.argv[1], "r")
+modelOutput = open(sys.argv[2], "w")
+#verilogOutput = open(sys.argv[3], "r")
 
-screen = mandelbrot(r0, r1, r2, r3)				# Launch the execution of command in module
-plt.imshow(screen)
+# Read the file with input vectors line by line
+lines = testVectors.readlines()
+counter = 0
+for line in lines:
+	numbers = line.split(' ')
+	r0 = int(numbers[0]) 					# Max iterations before Mandelbrot set membership determined
+	r1 = int(numbers[1], 16)				# Current real part of 'c'
+	r2 = int(numbers[2], 16)				# Current imaginary part of 'c'
+	r3 = int(numbers[3], 16)				# Step size in Argand plane
+	screen = mandelbrot(r0, r1, r2, r3)		# Launch the execution of command in module	
+	plt.figure(counter) 					# Show the resulting plot on virtual screen
+	plt.imshow(screen)
+	counter += 1
+
+
 plt.show()

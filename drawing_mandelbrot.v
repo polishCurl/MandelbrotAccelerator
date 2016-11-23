@@ -2,31 +2,29 @@
 * Author:       Krzysztof Koch
 * Brief:        Mandelbrot set visualisation drawing module
 * Date created: 17/11/2016
-* Last edit:    20/11/2016
+* Last edit:    23/11/2016
 * 
 * Note:
 *******************************************************************************************/
 
-
+// /
 
 /*------------------------------------------------------------------------------------------
 * Definitions    
 *-----------------------------------------------------------------------------------------*/
 
 // FSM states
-`define IDLE            0           // Device is idle
-`define NEW_PIXEL       1           // Compute new pixel value
-`define CONTINUE_PIXEL  2           // Computation of pixel current pixel value in progress
+`define IDLE            0                   // Device is idle
+`define NEW_PIXEL       1                   // Compute new pixel value
+`define CONTINUE_PIXEL  2                   // Computation of pixel current pixel value in progress
 
 // Global constants
-`define Q_LEN           32 			// Size of registers holding complex numbers
-`define INPUT_LEN       16          // Length of input parameters
-`define FRAC_LEN 		28 			// Number of bits for the fractional part
-`define INT_LEN         4           // Number of bits for the integer part
-`define SCREEN_WIDTH    640         // Screen size  
+`define Q_LEN           46                  // Size of registers holding complex numbers
+`define FRAC_LEN        40                  // Number of bits for the fractional part
+`define INT_LEN         `Q_LEN-`FRAC_LEN    // Number of bits for the integer part
+`define INPUT_LEN       16                  // Length of input parameters
+`define SCREEN_WIDTH    640                 // Screen size  
 `define SCREEN_HEIGHT   480         
-
-
 
 
 
@@ -67,7 +65,6 @@ reg  [`Q_LEN-1:0] c_i;                      // Current imaginary part of 'c'
 reg  [`Q_LEN-1:0] argand_step;              // Step size in Argand plane
 reg  [9:0]        x_pos;                    // Current X coordinate of pixel computed
 reg  [9:0]        y_pos;                    // Current Y coordinate of pixel computed
-reg  [7:0]        colour;                   // Pixel colour
 
 
 
@@ -120,10 +117,15 @@ assign address = (y_pos << 9) + (y_pos << 7) + x_pos;
 assign de_addr = address[19:2];
 
 // Convert the input parameters from 16 bit fixed point represetation to 32 bit 
-// fixed point (Q4.12 to Q4.28)
+// fixed point (Q6.10 to Q6.40)
 assign start_real = {r1, {(`Q_LEN-`INPUT_LEN){1'b0}}};
 assign start_imag = {r2, {(`Q_LEN-`INPUT_LEN){1'b0}}};
-assign step = {{`INT_LEN{1'b0}}, r3, {(`Q_LEN-`INPUT_LEN-`INT_LEN){1'b0}}};
+
+// Convert the step size from Q0.16 to Q6.40
+assign step = {{`INT_LEN{1'b0}}, r3, {(`FRAC_LEN-`INPUT_LEN){1'b0}}};
+
+// Pixel value to write
+assign de_data = {4{iteration[7:0]}};
 
 // Decode the lower 2 bits of address to produce nbyte selects.  
 always @(address[1:0])
@@ -134,31 +136,6 @@ always @(address[1:0])
 		2'b11 : de_nbyte <= 4'b0111;
 		default:de_nbyte <= 4'b1111;
 	endcase
-
-/*
-always @(iteration)
-    if (iteration >= max_iterations)
-        colour = 8'b00000000;
-    else
-        case (iteration[3:0])
-            0: colour = 8'b01000100;
-            1: colour = 8'b00000001;
-            2:
-            3:
-            4:
-            5:
-            6:
-            7:
-            8:
-            9:  
-            10:
-            11:
-            12:
-            13:
-            14:
-            15:
-            default:
-*/
 
 
 
@@ -192,7 +169,6 @@ begin
                 y_pos <= 0;                         
                 draw_state <= `CONTINUE_PIXEL;      // Carry on with calculation of the first pixel
             end                                     // This saves a cycle, instead of goint to `NEW PIXEL
-
 
         /*----------------------------------------------------------------------------------
         * New pixel value to compute
@@ -234,7 +210,6 @@ begin
                 end
             end
 
-
         /*----------------------------------------------------------------------------------
         * Pixel value still computed (Mandelbrot set membership is not determined)
         *---------------------------------------------------------------------------------*/
@@ -242,12 +217,12 @@ begin
             begin
                 // Clear 'acknowledge' output signal in command interface
                 ack <= 0;
-
+ 
                 // Update internal registers with current output from combinatorial logic
                 iteration <= iteration + 1;
                 z_r <= next_z_r;
-                z_i <= next_z_i;
-                
+                z_i <= next_z_i; 
+
                 // If either the 'z' value has overflown or max number of iterations is reached
                 // computation is over
                 if (finished || iteration >= max_iterations)

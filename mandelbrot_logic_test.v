@@ -11,9 +11,9 @@
 /*----------------------------------------------------------------------------
 * Definitions    
 *---------------------------------------------------------------------------*/ 
-`define WORD_LEN 		    32 		// Size of registers holding complex numbers
+`define Q_LEN 		        46 		// Size of registers holding complex numbers
 `define TIME_DELAY          5       // Delay between sucessive tests
-`define TEST_VECTORS_NO     13      // Number of test vectors
+`define TEST_VECTORS_NO     14      // Number of test vectors
 `define MAX_ITER            20      // Maximum number of iterations before mandelbrot       
                                     // set membership is determined
 
@@ -26,8 +26,8 @@ integer real_index;             // index into test vector of 'c' real values
 integer imag_index;             // index into test vector of 'c' imaginary values
 
 // Test cases
-reg	 [`WORD_LEN-1:0] c_real_in  [0:`TEST_VECTORS_NO];     
-reg	 [`WORD_LEN-1:0] c_imag_in  [0:`TEST_VECTORS_NO];    
+reg	 [`Q_LEN-1:0] c_real_in  [0:`TEST_VECTORS_NO];     
+reg	 [`Q_LEN-1:0] c_imag_in  [0:`TEST_VECTORS_NO];    
 
 
 
@@ -39,34 +39,36 @@ reg	 [`WORD_LEN-1:0] c_imag_in  [0:`TEST_VECTORS_NO];
 initial
 begin
     
-    // Initialise test cases, all falues are Q(4.28)
-    c_real_in[0] = 0;                   // 0.0
-    c_real_in[1] = 32'h00000A70;        // 0.00001
-    c_real_in[2] = 32'h01999999;        // 0.1
-    c_real_in[3] = 32'h04CCCCCC;        // 0.3          
-    c_real_in[4] = 32'h08000000;        // 0.5
-    c_real_in[5] = 32'h09999999;        // 0.6
-    c_real_in[6] = 32'h01C7A390;        // 0.11124
-    c_real_in[7] = 32'h0DF765F0;        // 0.872
-    c_real_in[8] = 32'h10000000;        // 1.0
-    c_real_in[9] = 32'hFDF765F0;        // -0.128
-    c_real_in[10] = 32'hFB333330;      // -0.3
-    c_real_in[11] = 32'hF0000000;      // -1.0
-    c_real_in[12] = 32'hE1C7A390;      // -1.88876
+    // Initialise test cases, all falues are Q(6.40)
+    c_real_in[0] = 0;                           // 0.0
+    c_real_in[1] = `Q_LEN'h000000A70000;        // 0.00001
+    c_real_in[2] = `Q_LEN'h001999999999;        // 0.1
+    c_real_in[3] = `Q_LEN'h004CCCCCCCCC;        // 0.3          
+    c_real_in[4] = `Q_LEN'h008000000000;        // 0.5
+    c_real_in[5] = `Q_LEN'h009999999999;        // 0.6
+    c_real_in[6] = `Q_LEN'h001C7A390000;        // 0.11124
+    c_real_in[7] = `Q_LEN'h00DF765F0000;        // 0.872
+    c_real_in[8] = `Q_LEN'h010000000000;        // 1.0
+    c_real_in[9] = `Q_LEN'h3FFFFFFFFFFF;        // -0.0000001
+    c_real_in[10] = `Q_LEN'h3FDF765F0000;       // -0.128
+    c_real_in[11] = `Q_LEN'h3FB333333333;       // -0.3
+    c_real_in[12] = `Q_LEN'h3F0000000000;       // -1.0
+    c_real_in[13] = `Q_LEN'h3E1C7A390000;       // -1.88876
 
-    c_imag_in[0] = 0;                   // 0.0i
-    c_imag_in[1] = 32'h00000A70;        // 0.00001i
-    c_imag_in[2] = 32'h01999999;        // 0.1i
-    c_imag_in[3] = 32'h04CCCCCC;        // 0.3i       
-    c_imag_in[4] = 32'h08000000;        // 0.5i
-    c_imag_in[5] = 32'h09999999;        // 0.6i
-    c_imag_in[6] = 32'h01C7A390;        // 0.11124i
-    c_imag_in[7] = 32'h0DF765F0;        // 0.872i
-    c_imag_in[8] = 32'h10000000;        // 1.0i
-    c_imag_in[9] = 32'hFDF765F0;        // -0.128i
-    c_imag_in[10] = 32'hFB333330;      // -0.3i
-    c_imag_in[11] = 32'hF0000000;      // -1.0i
-    c_imag_in[12] = 32'hE1C7A390;      // -1.88876i
+    c_imag_in[0] = 0;                           // 0.0i
+    c_imag_in[1] = `Q_LEN'h000000A70000;        // 0.00001i
+    c_imag_in[2] = `Q_LEN'h001999999999;        // 0.1i
+    c_imag_in[3] = `Q_LEN'h004CCCCCCCCC;        // 0.3i       
+    c_imag_in[4] = `Q_LEN'h008000000000;        // 0.5i
+    c_imag_in[5] = `Q_LEN'h009999999999;        // 0.6i
+    c_imag_in[6] = `Q_LEN'h001C7A390000;        // 0.11124i
+    c_imag_in[7] = `Q_LEN'h00DF765F0000;        // 0.872i
+    c_imag_in[8] = `Q_LEN'h010000000000;        // 1.0i
+    c_imag_in[9] = `Q_LEN'h3FFFFFFFFFFF;        // -0.0000001i
+    c_imag_in[10] = `Q_LEN'h3FDF765F0000;       // -0.128i
+    c_imag_in[11] = `Q_LEN'h3FB333333333;       // -0.3i
+    c_imag_in[12] = `Q_LEN'h3F00000000000;       // -1.0i
+    c_imag_in[13] = `Q_LEN'h3E1C7A3900000;       // -1.88876i
 
 
     // Go through each value of z (both imaginary and real part). Reset Z complex number
