@@ -3,17 +3,16 @@ KMD
 00000000:             ; ; Author:       Krzysztof Koch
 00000000:             ; ; Brief:        Demo program for the mandelbrot set hardware accelerator
 00000000:             ; ; Date created: 29/11/2016
-00000000:             ; ; Last edit:    29/11/2016
+00000000:             ; ; Last edit:    01/12/2016
 00000000:             ; ; 
 00000000:             ; ; Note:
 00000000:             ; ;****************************************************************************************
 00000000:             ; 
 00000000:             ; 
-00000000:             ; 
 00000000:             ; ;----------------------------------------------------------------------------------------
-00000000:             ; ; Allocate memory for stack
+00000000:             ; ; Allocate memory for stack and assign the stack pointer
 00000000:             ; ;----------------------------------------------------------------------------------------
-00000000: 00 00 00 00 ;                                 DEFS    128, 0                                  
+00000000: 00 00 00 00 ;                 DEFS    128, 0                  
 00000004: 00 00 00 00 ; 
 00000008: 00 00 00 00 ; 
 0000000C: 00 00 00 00 ; 
@@ -45,343 +44,469 @@ KMD
 00000074: 00 00 00 00 ; 
 00000078: 00 00 00 00 ; 
 0000007C: 00 00 00 00 ; 
-00000080:             ; stack                                                                           
-00000080:             ;                                 ALIGN
+00000080:             ; stack                                       
+00000080:             ;                 ALIGN
 00000080:             ; 
-00000080:             ; 
-00000080:             ; 
-00000080:             ;                                 ; Assign the stack pointer
-00000080: E24FD008    ;                                 ADR     SP, stack                       
-00000084:             ;                                 
+00000080: E24FD008    ;                 ADR     SP, stack           
+00000084:             ;             
 00000084:             ; 
 00000084:             ; 
 00000084:             ; ;----------------------------------------------------------------------------------------
 00000084:             ; ; Main demo loop
 00000084:             ; ;----------------------------------------------------------------------------------------
-00000084:             ;                 
-00000084:             ; ; Show some regions with number of iterations gradually increasing (growing detail)
-00000084: E28F4F6B    ; demoStart               ADR             R4, growingDetail
-00000088: E3A05000    ;                                 MOV             R5, #0
-0000008C: E28F6F45    ;                                 ADR     R6, detailDelayLen
-00000090: E5166000    ;                                 LDR     R6, [R6]
-00000094: E28F7F6A    ;                                 ADR     R7, maxDetail
-00000098:             ;         
-00000098: E7948105    ; nextDetailEx    LDR     R8, [R4, R5, LSL #2]                    
-0000009C: E15890B0    ;                                 LDRH    R9, [R8]
-000000A0:             ; 
-000000A0: E1A00008    ; incrDetail              MOV     R0, R8
-000000A4: E1A01009    ;                                 MOV             R1, R9
-000000A8: EB000022    ;                                 BL              showDetail
-000000AC: E1A00006    ;                                 MOV     R0, R6
-000000B0: EB000030    ;                                 BL              wait
-000000B4: E2899001    ;                                 ADD     R9, R9, #1
-000000B8: E797A105    ;                                 LDR     R10, [R7, R5, LSL #2]
-000000BC: E159000A    ;                                 CMP             R9, R10
-000000C0: BAFFFFF6    ;                                 BLT     incrDetail
-000000C4:             ; 
-000000C4: E2855001    ;                                 ADD     R5, R5, #1
-000000C8: E3550003    ;                                 CMP     R5, #noOfDetailEx
-000000CC: BAFFFFF1    ;                                 BLT     nextDetailEx
-000000D0:             ; 
-000000D0:             ; 
-000000D0:             ; ; Slideshow showing various points zoomed at
-000000D0: E28F40D4    ;                                 ADR     R4, slides                                      ; Load 
-                      ; the look-up table with slides
-000000D4: E3A05000    ;                                 MOV     R5, #0                                          ; Initi
-                      ; alise the slide counter
-000000D8: E28F60C4    ;                                 ADR     R6, slideDelayLen                       ; Load the dela
-                      ; y value between slides
-000000DC:             ; 
-000000DC:             ; 
-000000DC: E7940105    ; nextSlide               LDR     R0, [R4, R5, LSL #2]            ; Use the counter to index into
-                      ;  the table
-000000E0: EB000005    ;                                 BL              showSlide                                      
-                      ; ; Show the slide
-000000E4: E5160000    ;                                 LDR     R0, [R6]                                        ; Wait 
-                      ; for specified amount of time or until
-000000E8: EB000022    ;                                 BL              wait                                           
-                      ; ; the accelerator finishes serving the request
-000000EC: E2855001    ;                                 ADD             R5, R5, #1                                     
-000000F0: E3550007    ;                                 CMP     R5, #noOfSlides
-000000F4: BAFFFFF8    ;                                 BLT     nextSlide                                       ; Repea
-                      ; t if there are more slides to show
+00000084:             ; 
+00000084:             ; ;****************************************************************************************
+00000084:             ; ; Slideshow showing various points zoomed at
+00000084:             ; ;****************************************************************************************
+00000084: E28F4F71    ; demoStart       ADR     R4, slides                  ; Load the look-up table with slides
+00000088: E3A05000    ;                 MOV     R5, #0                      ; Initialise the slide counter
+0000008C: E28F6E1B    ;                 ADR     R6, slideDelayLen           ; Load the delay value between slides
+00000090:             ; 
+00000090: E7940105    ; nextSlide       LDR     R0, [R4, R5, LSL #2]        ; Use the counter to index into the table
+00000094: EB00002C    ;                 BL      showSlide                   ; Show the slide
+00000098: E5160000    ;                 LDR     R0, [R6]                    ; Wait for specified amount of time or unti
+                      ; l
+0000009C: EB00005D    ;                 BL      wait                        ; the accelerator finishes serving the requ
+                      ; est
+000000A0: E2855001    ;                 ADD     R5, R5, #1                  
+000000A4: E355000A    ;                 CMP     R5, #noOfSlides
+000000A8: BAFFFFF8    ;                 BLT     nextSlide                   ; Repeat if there are more slides to show
+000000AC:             ; 
+000000AC:             ; 
+000000AC:             ; ;****************************************************************************************
+000000AC:             ; ; Show some regions with number of iterations gradually increasing (growing detail)
+000000AC:             ; ;****************************************************************************************
+000000AC: E28F4F99    ;                 ADR     R4, growingDetail           ; Load the look-up table with examples
+000000B0: E3A05000    ;                 MOV     R5, #0                      ; Initialise the example counter
+000000B4: E28F6F63    ;                 ADR     R6, detailDelayLen          ; Load the delay value between successive
+000000B8: E5166000    ;                 LDR     R6, [R6]                    ; maximum iteration values
+000000BC: E28F7E26    ;                 ADR     R7, maxDetail               ; Load the value for maximum number of iter
+                      ; ations
+000000C0:             ;     
+000000C0: E7948105    ; nextDetailEx    LDR     R8, [R4, R5, LSL #2]        ; Use the counter to index into the table  
+                      ;  
+000000C4: E15890B0    ;                 LDRH    R9, [R8]                    ; Load the starting number of iterations
+000000C8:             ; 
+000000C8: E1A00008    ; incrDetail      MOV     R0, R8                      ; Show the point with given number of itera
+                      ; tions
+000000CC: E1A01009    ;                 MOV     R1, R9
+000000D0: EB00002C    ;                 BL      showDetail
+000000D4: E1A00006    ;                 MOV     R0, R6                      ; Introduce a delay
+000000D8: EB00004E    ;                 BL      wait
+000000DC: E2899001    ;                 ADD     R9, R9, #1                  ; Increment the number of iterations
+000000E0: E797A105    ;                 LDR     R10, [R7, R5, LSL #2]       ; Check if the maximum on is reached, termi
+                      ; nate,
+000000E4: E159000A    ;                 CMP     R9, R10                     ; if so
+000000E8: BAFFFFF6    ;                 BLT     incrDetail
+000000EC:             ; 
+000000EC: E2855001    ;                 ADD     R5, R5, #1                  ; Update the example counter
+000000F0: E3550003    ;                 CMP     R5, #noOfDetailEx           ; Check if the last example has been shown
+000000F4: BAFFFFF1    ;                 BLT     nextDetailEx
 000000F8:             ; 
-000000F8: EAFFFFE1    ;                                 B               demoStart
-000000FC:             ; 
-000000FC:             ; 
-000000FC:             ; 
-000000FC:             ; ;----------------------------------------------------------------------------------------
-000000FC:             ; ; Function:             showSlide
-000000FC:             ; ; Purpose:              Display the slide with address given in R0 on screen.
-000000FC:             ; ; Arguments:
-000000FC:             ; ;       R0 - pointer to the slide to show
-000000FC:             ; ; Returns:              -
-000000FC:             ; ;----------------------------------------------------------------------------------------
-000000FC: E92D00F0    ; showSlide               PUSH    {R4-R7}
-00000100: E3A04203    ;                                 MOV     R4, #drawingBase
-00000104: E3A05000    ;                                 MOV     R5, #0
-00000108:             ; 
-00000108: E1A06085    ; nextParamSlide  LSL             R6, R5, #1
-0000010C: E19070B6    ;                                 LDRH    R7, [R0, R6]
-00000110: E18470B6    ;                                 STRH    R7, [R4, R6]
-00000114: E2855001    ;                                 ADD     R5, R5, #1
-00000118: E3550007    ;                                 CMP     R5, #maxParamOffset
-0000011C: BAFFFFF9    ;                                 BLT     nextParamSlide
-00000120:             ; 
-00000120: E3A05000    ;                                 MOV     R5, #mandelbrot
-00000124: E3A06008    ;                                 MOV     R6, #commandOffset
-00000128: E1A07086    ;                                 LSL     R7, R6, #1
-0000012C: E7C45007    ;                                 STRB    R5, [R4, R7]
-00000130: E8BD00F0    ;                                 POP     {R4-R7}
-00000134: E1A0F00E    ;                                 MOV     PC, LR
-00000138:             ; 
-00000138:             ; 
-00000138:             ; 
-00000138:             ; ;----------------------------------------------------------------------------------------
-00000138:             ; ; Function:             showDetail
-00000138:             ; ; Purpose:              Similar to showSlide but the maximum number of iterations is specified 
-                      ; as 
-00000138:             ; ;                               extra parameter
-00000138:             ; ; Arguments:
-00000138:             ; ;       R0 - pointer to the mandelbrot set to show
-00000138:             ; ;       R1 - maximum number of iterations
-00000138:             ; ; Returns:              -
-00000138:             ; ;----------------------------------------------------------------------------------------
-00000138: E92D00F0    ; showDetail              PUSH    {R4-R7}
-0000013C: E3A04203    ;                                 MOV     R4, #drawingBase
-00000140: E14410B0    ;                                 STRH    R1, [R4]
-00000144: E3A05001    ;                                 MOV     R5, #1
+000000F8:             ; 
+000000F8:             ; ;****************************************************************************************
+000000F8:             ; ; Show some regions by gradually zooming-in
+000000F8:             ; ;****************************************************************************************
+000000F8: E28F4E26    ;                 ADR     R4, zoomIn                  ; Load the look-up table with examples
+000000FC: E3A05000    ;                 MOV     R5, #0                      ; Initialise the example counter
+00000100: E28F6F51    ;                 ADR     R6, zoomDelayLen            ; Load the delay value between successive
+00000104: E5166000    ;                 LDR     R6, [R6]                    ; 'zooms'
+00000108: E28F7F96    ;                 ADR     R7, maxZoom                 ; Load the minimum and maximum zoom values
+0000010C: E28F8F97    ;                 ADR     R8, minZoom
+00000110:             ; 
+00000110: E7949105    ; nextZoomEx      LDR     R9, [R4, R5, LSL #2]        ; Use the counter to index into the table w
+                      ; ith examples
+00000114: E798A105    ;                 LDR     R10, [R8, R5, LSL #2]       ; Load the initial 'zoom' value
+00000118:             ; 
+00000118: E1A00009    ; incrZoom        MOV     R0, R9                      ; Show the point with given step size in Ar
+                      ; gand plane
+0000011C: E1A0100A    ;                 MOV     R1, R10
+00000120: EB000028    ;                 BL      showZoom
+00000124: E1A00006    ;                 MOV     R0, R6
+00000128: EB00003A    ;                 BL      wait                        ; Introduce a delay
+0000012C: E04AA1CA    ;                 SUB     R10, R10, R10, ASR #3       ; Decrease the step size by 1/8 of the prev
+                      ; ious value
+00000130: E797B105    ;                 LDR     R11, [R7, R5, LSL #2]       ; Check if the maximum zoom has been reache
+                      ; d.
+00000134: E15A000B    ;                 CMP     R10, R11                    ; if not, carry on
+00000138: CAFFFFF6    ;                 BGT     incrZoom
+0000013C:             ; 
+0000013C: E2855001    ;                 ADD     R5, R5, #1                  ; Update the example counter
+00000140: E3550002    ;                 CMP     R5, #noOfZoomEx             ; Check if the last example has been shown
+00000144: BAFFFFF1    ;                 BLT     nextZoomEx
 00000148:             ; 
-00000148: E1A06085    ; nextParamDetail LSL     R6, R5, #1
-0000014C: E19070B6    ;                                 LDRH    R7, [R0, R6]
-00000150: E18470B6    ;                                 STRH    R7, [R4, R6]
-00000154: E2855001    ;                                 ADD     R5, R5, #1
-00000158: E3550007    ;                                 CMP     R5, #maxParamOffset
-0000015C: BAFFFFF9    ;                                 BLT     nextParamDetail
-00000160:             ; 
-00000160: E3A05000    ;                                 MOV     R5, #mandelbrot
-00000164: E3A06008    ;                                 MOV     R6, #commandOffset
-00000168: E1A07086    ;                                 LSL     R7, R6, #1
-0000016C: E7C45007    ;                                 STRB    R5, [R4, R7]
-00000170: E8BD00F0    ;                                 POP     {R4-R7}
-00000174: E1A0F00E    ;                                 MOV     PC, LR
-00000178:             ; 
-00000178:             ; 
-00000178:             ; 
-00000178:             ; ;----------------------------------------------------------------------------------------
-00000178:             ; ; Function:             wait
-00000178:             ; ; Purpose:              Wait for specified number of iterations or until the accelerator is not
-                      ;   
-00000178:             ; ;                               busy depending on which time is longer
-00000178:             ; ; Arguments:
-00000178:             ; ;       R0 - number of iterations to wait
-00000178:             ; ;       R1 - maximum number of iterations
-00000178:             ; ; Returns:              -
-00000178:             ; ;----------------------------------------------------------------------------------------
-00000178:             ; 
-00000178: E92D00F0    ; wait                    PUSH    {R4-R7}
-0000017C: E2500001    ; stillWait               SUBS    R0, R0, #1
-00000180: 1AFFFFFD    ;                                 BNE     stillWait
-00000184:             ;                                 
-00000184: E3A04203    ;                                 MOV     R4, #drawingBase
-00000188: E3A0500F    ;                                 MOV     R5, #statusOffset
-0000018C: E1A06085    ;                                 LSL     R6, R5, #1
-00000190:             ; 
-00000190: E19470B6    ; stillBusy               LDRH    R7, [R4, R6]
-00000194: E3170002    ;                                 TST     R7, #busyMask
-00000198: 1AFFFFFC    ;                                 BNE     stillBusy
-0000019C:             ; 
-0000019C: E8BD00F0    ;                                 POP     {R4-R7}
-000001A0: E1A0F00E    ;                                 MOV     PC, LR
-000001A4:             ; 
-000001A4:             ; 
-000001A4:             ; 
-000001A4:             ; 
-000001A4:             ; 
-000001A4:             ; 
-000001A4:             ; ;----------------------------------------------------------------------------------------
-000001A4:             ; ; Important aliases
-000001A4:             ; ;----------------------------------------------------------------------------------------
-000001A4:             ; drawingBase     EQU             0x30000000              
-000001A4:             ; maxParamOffset  EQU     7       
-000001A4:             ; commandOffset   EQU     8
-000001A4:             ; statusOffset    EQU     15                      
-000001A4:             ; mandelbrot              EQU             0
-000001A4:             ; 
-000001A4:             ; 
-000001A4:             ; busyMask                EQU     0x0002
-000001A4:             ; 
-000001A4:             ; 
-000001A4:             ; 
-000001A4:             ; 
-000001A4: 000F4240    ; slideDelayLen   DEFW    1000000
-000001A8:             ; 
-000001A8:             ; 
-000001A8: 0000C350    ; detailDelayLen  DEFW    50000                   
-000001AC:             ; 
-000001AC:             ; 
-000001AC:             ; 
-000001AC:             ; 
-000001AC:             ; ;----------------------------------------------------------------------------------------
-000001AC:             ; ; Slides data
-000001AC:             ; ;----------------------------------------------------------------------------------------
-000001AC:             ; noOfSlides              EQU     7                               ; Number of slides to show
-000001AC:             ; 
-000001AC: 000001C8    ; slides                  DEFW    slide0                  ; Slides look-up table
-000001B0: 000001D8    ;                                 DEFW    slide1
-000001B4: 000001E8    ;                                 DEFW    slide2
-000001B8: 000001F8    ;                                 DEFW    slide3
-000001BC: 00000208    ;                                 DEFW    slide4          
-000001C0: 00000218    ;                                 DEFW    slide5
-000001C4: 00000228    ;                                 DEFW    slide6
+00000148: EAFFFFCD    ;                 B       demoStart                   ; Start from the beginning
+0000014C:             ; 
+0000014C:             ; 
+0000014C:             ; 
+0000014C:             ; ;----------------------------------------------------------------------------------------
+0000014C:             ; ; Function:     showSlide
+0000014C:             ; ; Purpose:      Display the slide with address given in R0 on screen.
+0000014C:             ; ; Arguments:
+0000014C:             ; ;   R0 - pointer to the slide to show
+0000014C:             ; ; Returns:      -
+0000014C:             ; ;----------------------------------------------------------------------------------------
+0000014C: E92D00F0    ; showSlide       PUSH    {R4-R7}
+00000150: E3A04203    ;                 MOV     R4, #drawingBase
+00000154: E3A05000    ;                 MOV     R5, #0
+00000158:             ; 
+00000158: E1A06085    ; nextParamSlide  LSL     R6, R5, #1
+0000015C: E19070B6    ;                 LDRH    R7, [R0, R6]
+00000160: E18470B6    ;                 STRH    R7, [R4, R6]
+00000164: E2855001    ;                 ADD     R5, R5, #1
+00000168: E3550007    ;                 CMP     R5, #maxParamOffset
+0000016C: BAFFFFF9    ;                 BLT     nextParamSlide
+00000170:             ; 
+00000170: E3A05000    ;                 MOV     R5, #mandelbrot
+00000174: E3A06008    ;                 MOV     R6, #commandOffset
+00000178: E1A07086    ;                 LSL     R7, R6, #1
+0000017C: E7C45007    ;                 STRB    R5, [R4, R7]
+00000180: E8BD00F0    ;                 POP     {R4-R7}
+00000184: E1A0F00E    ;                 MOV     PC, LR
+00000188:             ; 
+00000188:             ; 
+00000188:             ; 
+00000188:             ; ;----------------------------------------------------------------------------------------
+00000188:             ; ; Function:     showDetail
+00000188:             ; ; Purpose:      Similar to showSlide but the maximum number of iterations is specified as 
+00000188:             ; ;               extra parameter
+00000188:             ; ; Arguments:
+00000188:             ; ;   R0 - pointer to the mandelbrot set to show
+00000188:             ; ;   R1 - maximum number of iterations
+00000188:             ; ; Returns:      -
+00000188:             ; ;----------------------------------------------------------------------------------------
+00000188: E92D00F0    ; showDetail      PUSH    {R4-R7}
+0000018C: E3A04203    ;                 MOV     R4, #drawingBase
+00000190: E14410B0    ;                 STRH    R1, [R4]
+00000194: E3A05001    ;                 MOV     R5, #1
+00000198:             ; 
+00000198: E1A06085    ; nextParamDetail LSL     R6, R5, #1
+0000019C: E19070B6    ;                 LDRH    R7, [R0, R6]
+000001A0: E18470B6    ;                 STRH    R7, [R4, R6]
+000001A4: E2855001    ;                 ADD     R5, R5, #1
+000001A8: E3550007    ;                 CMP     R5, #maxParamOffset
+000001AC: BAFFFFF9    ;                 BLT     nextParamDetail
+000001B0:             ; 
+000001B0: E3A05000    ;                 MOV     R5, #mandelbrot
+000001B4: E3A06008    ;                 MOV     R6, #commandOffset
+000001B8: E1A07086    ;                 LSL     R7, R6, #1
+000001BC: E7C45007    ;                 STRB    R5, [R4, R7]
+000001C0: E8BD00F0    ;                 POP     {R4-R7}
+000001C4: E1A0F00E    ;                 MOV     PC, LR
 000001C8:             ; 
 000001C8:             ; 
-000001C8:             ; ; Slide input parameters to the accelerator
-000001C8: 0104        ; slide0                  DEFH    260                     ; Number of iterations
-000001CA: FEA0        ;                                 DEFH    0xFEA0                  ; Starting real value of 'z'
-000001CC: 0A7F        ;                                 DEFH    0x0A7F                  ; Starting imaginary value of '
-                      ; z'
-000001CE: 0000        ;                                 DEFH    0x0000                  ; Step size in argand plane (32
-                      ;  bits)
-000001D0: 4000        ;                                 DEFH    0x4000
-000001D2: 0280        ;                                 DEFH    640                     ; Screen width
-000001D4: 01E0        ;                                 DEFH    480                     ; Screen height
-000001D8:             ;                                 ALIGN
-000001D8:             ; 
-000001D8: 0078        ; slide1                  DEFH    120
-000001DA: F370        ;                                 DEFH    0xF370
-000001DC: 01C3        ;                                 DEFH    0x01C3
-000001DE: 0004        ;                                 DEFH    0x0004
-000001E0: 0000        ;                                 DEFH    0x0000
-000001E2: 0280        ;                                 DEFH    640
-000001E4: 01E0        ;                                 DEFH    480
-000001E8:             ;                                 ALIGN
-000001E8:             ; 
-000001E8: 001E        ; slide2                  DEFH    30
-000001EA: F400        ;                                 DEFH    0xF400
-000001EC: 0199        ;                                 DEFH    0x0199
-000001EE: 0080        ;                                 DEFH    0x0080
-000001F0: 0000        ;                                 DEFH    0x0000
-000001F2: 0280        ;                                 DEFH    640
-000001F4: 01E0        ;                                 DEFH    480
-000001F8:             ;                                 ALIGN
-000001F8:             ; 
-000001F8: 0122        ; slide3                  DEFH    290
-000001FA: 0560        ;                                 DEFH    0x0560
-000001FC: 0100        ;                                 DEFH    0x0100
-000001FE: 0000        ;                                 DEFH    0x0000
-00000200: 0100        ;                                 DEFH    0x0100
-00000202: 0280        ;                                 DEFH    640
-00000204: 01E0        ;                                 DEFH    480
-00000208:             ;                                 ALIGN
-00000208:             ; 
-00000208: 0050        ; slide4                  DEFH    80
-0000020A: 0500        ;                                 DEFH    0x0500
-0000020C: 07B6        ;                                 DEFH    0x07B6
-0000020E: 0002        ;                                 DEFH    0x0002
-00000210: 0000        ;                                 DEFH    0x0000
-00000212: 0280        ;                                 DEFH    640
-00000214: 01E0        ;                                 DEFH    480
-00000218:             ;                                 ALIGN
+000001C8:             ; 
+000001C8:             ; ;----------------------------------------------------------------------------------------
+000001C8:             ; ; Function:     showZoom
+000001C8:             ; ; Purpose:      Similar to showSlide but the step size in Argand plane is specified in 
+000001C8:             ; ;               in an extra parameter
+000001C8:             ; ; Arguments:
+000001C8:             ; ;   R0 - pointer to the mandelbrot set to show
+000001C8:             ; ;   R1 - step size in Argand plane (the smaller, the bigger the zoom)
+000001C8:             ; ; Returns:      -
+000001C8:             ; ;----------------------------------------------------------------------------------------
+000001C8: E92D00F0    ; showZoom        PUSH    {R4-R7}
+000001CC: E3A04203    ;                 MOV     R4, #drawingBase
+000001D0: E3A05003    ;                 MOV     R5, #stepSizeOffset
+000001D4: E7841085    ;                 STR     R1, [R4, R5, LSL #1]
+000001D8:             ;                 
+000001D8: E15050B0    ;                 LDRH    R5, [R0]
+000001DC: E14450B0    ;                 STRH    R5, [R4]
+000001E0: E1D050B2    ;                 LDRH    R5, [R0, #2]
+000001E4: E1C450B2    ;                 STRH    R5, [R4, #2]
+000001E8: E1D050B4    ;                 LDRH    R5, [R0, #4]
+000001EC: E1C450B4    ;                 STRH    R5, [R4, #4]
+000001F0: E1D050BA    ;                 LDRH    R5, [R0, #10]
+000001F4: E1C450BA    ;                 STRH    R5, [R4, #10]
+000001F8: E1D050BC    ;                 LDRH    R5, [R0, #12]
+000001FC: E1C450BC    ;                 STRH    R5, [R4, #12]
+00000200:             ; 
+00000200: E3A05000    ;                 MOV     R5, #mandelbrot
+00000204: E3A06008    ;                 MOV     R6, #commandOffset
+00000208: E1A07086    ;                 LSL     R7, R6, #1
+0000020C: E7C45007    ;                 STRB    R5, [R4, R7]
+00000210: E8BD00F0    ;                 POP     {R4-R7}
+00000214: E1A0F00E    ;                 MOV     PC, LR
 00000218:             ; 
-00000218: 00AA        ; slide5                  DEFH    170
-0000021A: F400        ;                                 DEFH    0xF400
-0000021C: 0199        ;                                 DEFH    0x0199
-0000021E: 0000        ;                                 DEFH    0x0000
-00000220: 2000        ;                                 DEFH    0x2000
-00000222: 0280        ;                                 DEFH    640
-00000224: 01E0        ;                                 DEFH    480
-00000228:             ;                                 ALIGN
-00000228:             ; 
-00000228: 00C8        ; slide6                  DEFH    200
-0000022A: 0000        ;                                 DEFH    0x0000
-0000022C: 1000        ;                                 DEFH    0x1000
-0000022E: 0000        ;                                 DEFH    0x0000
-00000230: 0400        ;                                 DEFH    0x0400
-00000232: 0280        ;                                 DEFH    640
-00000234: 01E0        ;                                 DEFH    480
-00000238:             ;                                 ALIGN
-00000238:             ; 
-00000238:             ; 
-00000238:             ; 
-00000238:             ; 
-00000238:             ; ;----------------------------------------------------------------------------------------
-00000238:             ; ; Growing detail demo data
-00000238:             ; ;----------------------------------------------------------------------------------------
-00000238:             ; noOfDetailEx    EQU     3                               ; Number of growing detail examples
-00000238:             ; 
-00000238: 00000250    ; growingDetail   DEFW    detail0                 ; Slides look-up table
-0000023C: 00000260    ;                                 DEFW    detail1
-00000240: 00000270    ;                                 DEFW    detail2
+00000218:             ; 
+00000218:             ; 
+00000218:             ; ;----------------------------------------------------------------------------------------
+00000218:             ; ; Function:     wait
+00000218:             ; ; Purpose:      Wait for specified number of iterations or until the accelerator is not  
+00000218:             ; ;               busy serving previous request, depending on which time is longer
+00000218:             ; ; Arguments:
+00000218:             ; ;   R0 - number of iterations to wait
+00000218:             ; ; Returns:      -
+00000218:             ; ;----------------------------------------------------------------------------------------
+00000218: E92D00F0    ; wait            PUSH    {R4-R7}
+0000021C: E2500001    ; stillWait       SUBS    R0, R0, #1
+00000220: 1AFFFFFD    ;                 BNE     stillWait
+00000224:             ;                 
+00000224: E3A04203    ;                 MOV     R4, #drawingBase
+00000228: E3A0500F    ;                 MOV     R5, #statusOffset
+0000022C: E1A06085    ;                 LSL     R6, R5, #1
+00000230:             ; 
+00000230: E19470B6    ; stillBusy       LDRH    R7, [R4, R6]
+00000234: E3170002    ;                 TST     R7, #busyMask
+00000238: 1AFFFFFC    ;                 BNE     stillBusy
+0000023C:             ; 
+0000023C: E8BD00F0    ;                 POP     {R4-R7}
+00000240: E1A0F00E    ;                 MOV     PC, LR
 00000244:             ; 
 00000244:             ; 
 00000244:             ; 
-00000244: 00000050    ; maxDetail               DEFW    80
-00000248: 00000064    ;                                 DEFW    100
-0000024C: 0000002D    ;                                 DEFW    45
+00000244:             ; ;----------------------------------------------------------------------------------------
+00000244:             ; ; Important aliases. (Offsets are in halfwords - 16bit)
+00000244:             ; ;----------------------------------------------------------------------------------------
+00000244:             ; drawingBase     EQU     0x30000000          ; Base address of the interface to the accelerato
+00000244:             ; maxParamOffset  EQU     7                   ; Maximum address offset for input parameters
+00000244:             ; commandOffset   EQU     8                   ; Offset for specifying the command - mandelbrot
+00000244:             ; statusOffset    EQU     15                  ; Status register offset
+00000244:             ; stepSizeOffset  EQU     3                   ; Step size paraemeter offset
+00000244:             ; mandelbrot      EQU     0                   ; Mandelbrot command code
+00000244:             ; busyMask        EQU     0x0002              ; Mask off all the bits except the busy one in stat
+                      ; us reg
+00000244: 001E8480    ; slideDelayLen   DEFW    2000000             ; Delay between slides (in number of iterations)
+00000248: 0000C350    ; detailDelayLen  DEFW    50000               ; Minimum delay before level of detail is increment
+                      ; ed
+0000024C: 00055730    ; zoomDelayLen    DEFW    350000              ; Minimum delay before the zoom is incremented
 00000250:             ; 
 00000250:             ; 
-00000250:             ; ; Input parameters for showing a region in mandelbrot with increasing detail
-00000250: 000A        ; detail0                 DEFH    10
-00000252: 0500        ;                                 DEFH    0x0500
-00000254: 07B6        ;                                 DEFH    0x07B6
-00000256: 0002        ;                                 DEFH    0x0002
-00000258: 0000        ;                                 DEFH    0x0000
-0000025A: 0280        ;                                 DEFH    640
-0000025C: 01E0        ;                                 DEFH    480
-00000260:             ;                                 ALIGN
-00000260:             ; 
-00000260: 001E        ; detail1                 DEFH    30
-00000262: F400        ;                                 DEFH    0xF400
-00000264: 0199        ;                                 DEFH    0x0199
-00000266: 0000        ;                                 DEFH    0x0000
-00000268: 2000        ;                                 DEFH    0x2000
-0000026A: 0280        ;                                 DEFH    640
-0000026C: 01E0        ;                                 DEFH    480
-00000270:             ;                                 ALIGN
-00000270:             ; 
-00000270: 0001        ; detail2                 DEFH    1
-00000272: E000        ;                                 DEFH    0xE000
-00000274: F000        ;                                 DEFH    0xF000
-00000276: 0147        ;                                 DEFH    0x0147
-00000278: 0000        ;                                 DEFH    0x0000
-0000027A: 0280        ;                                 DEFH    640
-0000027C: 01E0        ;                                 DEFH    480
-00000280:             ;                                 ALIGN
+00000250:             ; 
+00000250:             ; ;----------------------------------------------------------------------------------------
+00000250:             ; ; Slides data
+00000250:             ; ;----------------------------------------------------------------------------------------
+00000250:             ; noOfSlides      EQU     10              ; Number of slides to show
+00000250:             ; 
+00000250: 00000278    ; slides          DEFW    slide0          ; Slides look-up table
+00000254: 00000288    ;                 DEFW    slide1
+00000258: 00000298    ;                 DEFW    slide2
+0000025C: 000002A8    ;                 DEFW    slide3
+00000260: 000002B8    ;                 DEFW    slide4      
+00000264: 000002C8    ;                 DEFW    slide5
+00000268: 000002D8    ;                 DEFW    slide6
+0000026C: 000002E8    ;                 DEFW    slide7
+00000270: 000002F8    ;                 DEFW    slide8
+00000274: 00000308    ;                 DEFW    slide9
+00000278:             ; 
+00000278:             ; ; Slide input parameters to the accelerator
+00000278: 0032        ; slide0          DEFH    50              ; Number of iterations
+0000027A: E000        ;                 DEFH    0xE000          ; Starting real value of 'z'
+0000027C: F000        ;                 DEFH    0xF000          ; Starting imaginary value of 'z'
+0000027E: 0100        ;                 DEFH    0x0100          ; Step size in argand plane (32 bits)
+00000280: 0000        ;                 DEFH    0x0000
+00000282: 0280        ;                 DEFH    640             ; Screen width
+00000284: 01E0        ;                 DEFH    480             ; Screen height
+00000288:             ;                 ALIGN
+00000288:             ; 
+00000288: 0078        ; slide1          DEFH    120
+0000028A: F370        ;                 DEFH    0xF370
+0000028C: 01C3        ;                 DEFH    0x01C3
+0000028E: 0004        ;                 DEFH    0x0004
+00000290: 0000        ;                 DEFH    0x0000
+00000292: 0280        ;                 DEFH    640
+00000294: 01E0        ;                 DEFH    480
+00000298:             ;                 ALIGN
+00000298:             ; 
+00000298: 001E        ; slide2          DEFH    30
+0000029A: F400        ;                 DEFH    0xF400
+0000029C: 0199        ;                 DEFH    0x0199
+0000029E: 0080        ;                 DEFH    0x0080
+000002A0: 0000        ;                 DEFH    0x0000
+000002A2: 0280        ;                 DEFH    640
+000002A4: 01E0        ;                 DEFH    480
+000002A8:             ;                 ALIGN
+000002A8:             ; 
+000002A8: 0122        ; slide3          DEFH    290
+000002AA: 0560        ;                 DEFH    0x0560
+000002AC: 0100        ;                 DEFH    0x0100
+000002AE: 0000        ;                 DEFH    0x0000
+000002B0: 0100        ;                 DEFH    0x0100
+000002B2: 0280        ;                 DEFH    640
+000002B4: 01E0        ;                 DEFH    480
+000002B8:             ;                 ALIGN
+000002B8:             ; 
+000002B8: 0050        ; slide4          DEFH    80
+000002BA: 0500        ;                 DEFH    0x0500
+000002BC: 07B6        ;                 DEFH    0x07B6
+000002BE: 0002        ;                 DEFH    0x0002
+000002C0: 0000        ;                 DEFH    0x0000
+000002C2: 0280        ;                 DEFH    640
+000002C4: 01E0        ;                 DEFH    480
+000002C8:             ;                 ALIGN
+000002C8:             ; 
+000002C8: 00AA        ; slide5          DEFH    170
+000002CA: F400        ;                 DEFH    0xF400
+000002CC: 0199        ;                 DEFH    0x0199
+000002CE: 0000        ;                 DEFH    0x0000
+000002D0: 2000        ;                 DEFH    0x2000
+000002D2: 0280        ;                 DEFH    640
+000002D4: 01E0        ;                 DEFH    480
+000002D8:             ;                 ALIGN
+000002D8:             ; 
+000002D8: 00C8        ; slide6          DEFH    200
+000002DA: 0000        ;                 DEFH    0x0000
+000002DC: 1000        ;                 DEFH    0x1000
+000002DE: 0000        ;                 DEFH    0x0000
+000002E0: 0400        ;                 DEFH    0x0400
+000002E2: 0280        ;                 DEFH    640
+000002E4: 01E0        ;                 DEFH    480
+000002E8:             ;                 ALIGN
+000002E8:             ; 
+000002E8: 0104        ; slide7          DEFH    260             
+000002EA: FEA0        ;                 DEFH    0xFEA0          
+000002EC: 0A7F        ;                 DEFH    0x0A7F          
+000002EE: 0000        ;                 DEFH    0x0000          
+000002F0: 4000        ;                 DEFH    0x4000
+000002F2: 0280        ;                 DEFH    640             
+000002F4: 01E0        ;                 DEFH    480             
+000002F8:             ;                 ALIGN
+000002F8:             ; 
+000002F8: 00F1        ; slide8          DEFH    241
+000002FA: 0531        ;                 DEFH    0x0531
+000002FC: 00C6        ;                 DEFH    0x00C6
+000002FE: 0000        ;                 DEFH    0x0000
+00000300: 00B0        ;                 DEFH    0x00B0
+00000302: 0280        ;                 DEFH    640
+00000304: 01E0        ;                 DEFH    480
+00000308:             ;                 ALIGN
+00000308:             ; 
+00000308: 0064        ; slide9          DEFH    100
+0000030A: F95C        ;                 DEFH    0xF95C
+0000030C: F512        ;                 DEFH    0xF512
+0000030E: 0008        ;                 DEFH    0x0008
+00000310: 0000        ;                 DEFH    0x0000
+00000312: 0280        ;                 DEFH    640
+00000314: 01E0        ;                 DEFH    480
+00000318:             ;                 ALIGN
+00000318:             ; 
+00000318:             ; 
+00000318:             ; 
+00000318:             ; ;----------------------------------------------------------------------------------------
+00000318:             ; ; Growing detail demo data
+00000318:             ; ;----------------------------------------------------------------------------------------
+00000318:             ; noOfDetailEx    EQU     3               ; Number of growing detail examples
+00000318:             ; 
+00000318: 00000330    ; growingDetail   DEFW    detail0         ; Growing detail examples look-up table
+0000031C: 00000340    ;                 DEFW    detail1
+00000320: 00000350    ;                 DEFW    detail2
+00000324:             ; 
+00000324: 00000046    ; maxDetail       DEFW    70              ; maximum number of iterations (maximum level of detail
+                      ; )
+00000328: 0000005A    ;                 DEFW    90
+0000032C: 0000002D    ;                 DEFW    45
+00000330:             ; 
+00000330:             ; ; Input parameters for showing a region in mandelbrot with increasing detail
+00000330: 000A        ; detail0         DEFH    10              ; starting number of iterations
+00000332: 0500        ;                 DEFH    0x0500          ; Starting real value of 'z'
+00000334: 07B6        ;                 DEFH    0x07B6          ; Starting imaginary value of 'z'
+00000336: 0002        ;                 DEFH    0x0002          ; Step size in argand plane (32 bits)
+00000338: 0000        ;                 DEFH    0x0000
+0000033A: 0280        ;                 DEFH    640             ; Screen width
+0000033C: 01E0        ;                 DEFH    480             ; Screen height
+00000340:             ;                 ALIGN
+00000340:             ; 
+00000340: 001E        ; detail1         DEFH    30
+00000342: F400        ;                 DEFH    0xF400
+00000344: 0199        ;                 DEFH    0x0199
+00000346: 0000        ;                 DEFH    0x0000
+00000348: 2000        ;                 DEFH    0x2000
+0000034A: 0280        ;                 DEFH    640
+0000034C: 01E0        ;                 DEFH    480
+00000350:             ;                 ALIGN
+00000350:             ; 
+00000350: 0001        ; detail2         DEFH    1
+00000352: E000        ;                 DEFH    0xE000
+00000354: F000        ;                 DEFH    0xF000
+00000356: 0147        ;                 DEFH    0x0147
+00000358: 0000        ;                 DEFH    0x0000
+0000035A: 0280        ;                 DEFH    640
+0000035C: 01E0        ;                 DEFH    480
+00000360:             ;                 ALIGN
+00000360:             ; 
+00000360:             ; 
+00000360:             ; 
+00000360:             ; ;----------------------------------------------------------------------------------------
+00000360:             ; ; Increasing zoom demo data
+00000360:             ; ;----------------------------------------------------------------------------------------
+00000360:             ; noOfZoomEx      EQU     2               ; Number of increasing zoom examples
+00000360:             ; 
+00000360:             ; 
+00000360: 00000378    ; zoomIn          DEFW    zoom0           ; Zoom examples look-up table
+00000364: 00000388    ;                 DEFW    zoom1
+00000368:             ; 
+00000368: 00010000    ; maxZoom         DEFW    0x00010000      ; Maximum zooms (minimum step size)
+0000036C: 00010000    ;                 DEFW    0x00010000
+00000370:             ; 
+00000370: 00100000    ; minZoom         DEFW    0x00100000      ; Minimum zooms (maximum step size)
+00000374: 01000000    ;                 DEFW    0x01000000  
+00000378:             ; 
+00000378: 00D2        ; zoom0           DEFH    210             ; Number of iterations  
+0000037A: 0560        ;                 DEFH    0x0560          ; Starting real value of 'z'
+0000037C: 0100        ;                 DEFH    0x0100          ; Starting imaginary value of 'z'
+0000037E: 0000        ;                 DEFH    0x0000          ; Not used
+00000380: 0000        ;                 DEFH    0x0000
+00000382: 0280        ;                 DEFH    640             ; Screen width
+00000384: 01E0        ;                 DEFH    480             ; Screen height
+00000388:             ;                 ALIGN
+00000388:             ; 
+00000388: 00AA        ; zoom1           DEFH    170                 
+0000038A: F38F        ;                 DEFH    0xF38F
+0000038C: 0199        ;                 DEFH    0x0199
+0000038E: 0000        ;                 DEFH    0x0000
+00000390: 0000        ;                 DEFH    0x0000
+00000392: 0280        ;                 DEFH    640
+00000394: 01E0        ;                 DEFH    480
+00000398:             ;                 ALIGN
+00000398:             ; 
 
 Symbol Table: Labels
 : stack                             00000080  Local -- ARM
 : demoStart                         00000084  Local -- ARM
-: nextDetailEx                      00000098  Local -- ARM
-: incrDetail                        000000A0  Local -- ARM
-: nextSlide                         000000DC  Local -- ARM
-: showSlide                         000000FC  Local -- ARM
-: nextParamSlide                    00000108  Local -- ARM
-: showDetail                        00000138  Local -- ARM
-: nextParamDetail                   00000148  Local -- ARM
-: wait                              00000178  Local -- ARM
-: stillWait                         0000017C  Local -- ARM
-: stillBusy                         00000190  Local -- ARM
+: nextSlide                         00000090  Local -- ARM
+: nextDetailEx                      000000C0  Local -- ARM
+: incrDetail                        000000C8  Local -- ARM
+: nextZoomEx                        00000110  Local -- ARM
+: incrZoom                          00000118  Local -- ARM
+: showSlide                         0000014C  Local -- ARM
+: nextParamSlide                    00000158  Local -- ARM
+: showDetail                        00000188  Local -- ARM
+: nextParamDetail                   00000198  Local -- ARM
+: showZoom                          000001C8  Local -- ARM
+: wait                              00000218  Local -- ARM
+: stillWait                         0000021C  Local -- ARM
+: stillBusy                         00000230  Local -- ARM
 : drawingBase                       30000000  Value
 : maxParamOffset                    00000007  Value
 : commandOffset                     00000008  Value
 : statusOffset                      0000000F  Value
+: stepSizeOffset                    00000003  Value
 : mandelbrot                        00000000  Value
 : busyMask                          00000002  Value
-: slideDelayLen                     000001A4  Local -- ARM
-: detailDelayLen                    000001A8  Local -- ARM
-: noOfSlides                        00000007  Value
-: slides                            000001AC  Local -- ARM
-: slide0                            000001C8  Local -- ARM
-: slide1                            000001D8  Local -- ARM
-: slide2                            000001E8  Local -- ARM
-: slide3                            000001F8  Local -- ARM
-: slide4                            00000208  Local -- ARM
-: slide5                            00000218  Local -- ARM
-: slide6                            00000228  Local -- ARM
+: slideDelayLen                     00000244  Local -- ARM
+: detailDelayLen                    00000248  Local -- ARM
+: zoomDelayLen                      0000024C  Local -- ARM
+: noOfSlides                        0000000A  Value
+: slides                            00000250  Local -- ARM
+: slide0                            00000278  Local -- ARM
+: slide1                            00000288  Local -- ARM
+: slide2                            00000298  Local -- ARM
+: slide3                            000002A8  Local -- ARM
+: slide4                            000002B8  Local -- ARM
+: slide5                            000002C8  Local -- ARM
+: slide6                            000002D8  Local -- ARM
+: slide7                            000002E8  Local -- ARM
+: slide8                            000002F8  Local -- ARM
+: slide9                            00000308  Local -- ARM
 : noOfDetailEx                      00000003  Value
-: growingDetail                     00000238  Local -- ARM
-: maxDetail                         00000244  Local -- ARM
-: detail0                           00000250  Local -- ARM
-: detail1                           00000260  Local -- ARM
-: detail2                           00000270  Local -- ARM
+: growingDetail                     00000318  Local -- ARM
+: maxDetail                         00000324  Local -- ARM
+: detail0                           00000330  Local -- ARM
+: detail1                           00000340  Local -- ARM
+: detail2                           00000350  Local -- ARM
+: noOfZoomEx                        00000002  Value
+: zoomIn                            00000360  Local -- ARM
+: maxZoom                           00000368  Local -- ARM
+: minZoom                           00000370  Local -- ARM
+: zoom0                             00000378  Local -- ARM
+: zoom1                             00000388  Local -- ARM
